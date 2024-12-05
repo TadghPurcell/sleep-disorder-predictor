@@ -9,8 +9,8 @@ import os
 import plotly
 from config import Config
 import plotly.express as px
-from pyarrow import fs
-# from dotenv import load_dotenv
+from dotenv import load_dotenv
+from hdfs import InsecureClient
 import logging
 
 load_dotenv()
@@ -21,13 +21,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# HDFS_HOST = os.getenv("HDFS_HOST")
-# HDFS_PORT = int(os.getenv("HDFS_PORT"))
-# HDFS_USER = os.getenv("HDFS_USER")  
+HDFS_HOST = os.getenv("HDFS_HOST")
+HDFS_PORT = int(os.getenv("HDFS_PORT"))
+HDFS_USER = os.getenv("HDFS_USER")  
 
-# logger.info(f"HDFS_HOST: {HDFS_HOST}")
-# logger.info(f"HDFS_PORT: {HDFS_PORT}")
-# logger.info(f"HDFS_USER: {HDFS_USER}")
+logger.info(f"HDFS_HOST: {HDFS_HOST}")
+logger.info(f"HDFS_PORT: {HDFS_PORT}")
+logger.info(f"HDFS_USER: {HDFS_USER}")
 
 main_bp = Blueprint('main', __name__)
 
@@ -152,17 +152,14 @@ def hdfs_test():
         logger.debug(f"Connecting to HDFS at {HDFS_HOST}:{HDFS_PORT} as user {HDFS_USER}")
         
         # Connect to HDFS
-        hdfs = fs.HadoopFileSystem(host="default", port=0)
+        client = InsecureClient(url=f"http://{HDFS_HOST}:{HDFS_PORT}", proxy=HDFS_USER)
         
         # Log file retrieval
         logger.debug("Retrieving files from HDFS root directory ('/').")
-        file_selector = fs.FileSelector('/')
-        files = hdfs.get_file_info(file_selector)
-        file_list = [{"path": file.path, "type": file.type.name} for file in files]
-        
+        files = client.list('/')
         # Log success
         logger.info("Successfully retrieved file list from HDFS.")
-        return jsonify({"status": "success", "files": file_list})
+        return jsonify({"status": "success", "files": files}), 200
     except Exception as e:
         # Log the exception
         logger.error(f"HDFS connection failed: {str(e)}")
