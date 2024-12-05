@@ -11,21 +11,22 @@ from config import Config
 import plotly.express as px
 from pyarrow import fs
 from dotenv import load_dotenv
-
 import logging
+
+load_dotenv()
 
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s %(levelname)s: %(message)s'
 )
 
-HDFS_HOST = os.getenv("HDFS_HOST", "127.0.0.1")
-HDFS_PORT = int(os.getenv("HDFS_PORT", 8020))
-HDFS_USER = os.getenv("HDFS_USER", "hadoop")  
+HDFS_HOST = os.getenv("HDFS_HOST")
+HDFS_PORT = int(os.getenv("HDFS_PORT"))
+HDFS_USER = os.getenv("HDFS_USER")  
 
-app = Blueprint('main', __name__)
+main_bp = Blueprint('main', __name__)
 
-@app.route('/')
+@main_bp.route('/')
 def index():
     # Read and process the CSV data for initial visualization
     df = pd.read_csv('data/sleep_health_dataset.csv')
@@ -50,7 +51,7 @@ def index():
                          plot1=plot1_html, 
                          plot2=plot2_html)
 
-@app.route('/run-mapreduce', methods=['POST'])
+@main_bp.route('/run-mapreduce', methods=['POST'])
 def run_mapreduce():
     try:
         # Run MapReduce job
@@ -79,7 +80,7 @@ def run_mapreduce():
     except Exception as e:
         return jsonify(success=False, error=str(e))
     
-@app.route('/predict', methods=['POST'])
+@main_bp.route('/predict', methods=['POST'])
 def predict():
     try:
         # Get data from request
@@ -138,18 +139,20 @@ def predict():
         logging.error(f"Error in prediction: {str(e)}")
         return jsonify({'error': str(e)}), 400
 
-@app.route('/hdfs_test')
+@main_bp.route('/hdfs_test')
 def hdfs_test():
     try:
+        # Connect to HDFS using PyArrow
         hdfs = fs.HadoopFileSystem(
             host=HDFS_HOST,
             port=HDFS_PORT,
             user=HDFS_USER,
         )
         
-        # List files in the root directory
-        files = hdfs.get_file_info(fs.FileSelector('/'))
-        file_list = [file.path for file in files]
+        # List files in the root directory of HDFS
+        file_selector = fs.FileSelector('/', recursive=False)
+        files = hdfs.get_file_info(file_selector)
+        file_list = [{"path": file.path, "type": file.type.name} for file in files]
         
         return jsonify({"status": "success", "files": file_list})
     except Exception as e:
