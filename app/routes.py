@@ -5,9 +5,12 @@ import json
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler 
+import os
 import plotly
 from config import Config
 import plotly.express as px
+from pyarrow import fs
+from dotenv import load_dotenv
 
 import logging
 
@@ -16,9 +19,13 @@ logging.basicConfig(
     format='%(asctime)s %(levelname)s: %(message)s'
 )
 
-main_bp = Blueprint('main', __name__)
+HDFS_HOST = os.getenv("HDFS_HOST", "127.0.0.1")
+HDFS_PORT = int(os.getenv("HDFS_PORT", 8020))
+HDFS_USER = os.getenv("HDFS_USER", "hadoop")  
 
-@main_bp.route('/')
+app = Blueprint('main', __name__)
+
+@app.route('/')
 def index():
     # Read and process the CSV data for initial visualization
     df = pd.read_csv('data/sleep_health_dataset.csv')
@@ -43,7 +50,7 @@ def index():
                          plot1=plot1_html, 
                          plot2=plot2_html)
 
-@main_bp.route('/run-mapreduce', methods=['POST'])
+@app.route('/run-mapreduce', methods=['POST'])
 def run_mapreduce():
     try:
         # Run MapReduce job
@@ -72,7 +79,7 @@ def run_mapreduce():
     except Exception as e:
         return jsonify(success=False, error=str(e))
     
-@main_bp.route('/predict', methods=['POST'])
+@app.route('/predict', methods=['POST'])
 def predict():
     try:
         # Get data from request
@@ -130,3 +137,21 @@ def predict():
     except Exception as e:
         logging.error(f"Error in prediction: {str(e)}")
         return jsonify({'error': str(e)}), 400
+
+@app.route('/hdfs_test')
+def hdfs_test():
+    try:
+        hdfs = fs.HadoopFileSystem(
+            host=HDFS_HOST,
+            port=HDFS_PORT,
+            user=HDFS_USER,
+            kerb_ticket=KERB_TICKET
+        )
+        
+        # List files in the root directory
+        files = hdfs.get_file_info(fs.FileSelector('/'))
+        file_list = [file.path for file in files]
+        
+        return jsonify({"status": "success", "files": file_list})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
