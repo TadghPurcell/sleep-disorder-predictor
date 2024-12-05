@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard">
+    <div class="user-input-section">
+        <h2>Sleep Disorder Predictor</h2>
+        <form id="predictionForm" onsubmit="makePrediction(event)">
+            <div class="form-group">
+                <label for="age">Age:</label>
+                <input type="number" id="age" name="age" required min="18" max="100" value="35">
+            </div>
+            
+            <div class="form-group">
+                <label for="gender">Gender:</label>
+                <select id="gender" name="gender" required>
+                    <option value="Male" selected>Male</option>
+                    <option value="Female">Female</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="industry">Work Industry:</label>
+                <select id="industry" name="industry" required>
+                    <option value="">Select an industry</option>
+                    <option value="Healthcare" selected>Healthcare (Doctor, Nurse)</option>
+                    <option value="Technology">Technology (Software Engineer, Engineer, Scientist)</option>
+                    <option value="Education">Education (Teacher)</option>
+                    <option value="Finance">Finance (Accountant)</option>
+                    <option value="Legal">Legal (Lawyer)</option>
+                    <option value="Sales">Sales/Business (Salesperson, Manager)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="sleep_duration">Sleep Duration (hours):</label>
+                <input type="number" id="sleep_duration" name="sleep_duration" step="0.1" min="0" max="24" required value="7.0">
+            </div>
+            
+            <div class="form-group">
+                <label for="quality_of_sleep">Quality of Sleep (1-10):</label>
+                <input type="number" id="quality_of_sleep" name="quality_of_sleep" min="1" max="10" required value="7">
+            </div>
+            
+            <div class="form-group">
+                <label for="physical_activity">Physical Activity Level (minutes/day):</label>
+                <input type="number" id="physical_activity" name="physical_activity" min="0" required value="60">
+            </div>
+            
+            <div class="form-group">
+                <label for="stress_level">Stress Level (1-10):</label>
+                <input type="number" id="stress_level" name="stress_level" min="1" max="10" required value="6">
+            </div>
+            
+            <div class="form-group">
+                <label for="bmi_category">BMI Category:</label>
+                <select id="bmi_category" name="bmi_category" required>
+                    <option value="Normal" selected>Normal</option>
+                    <option value="Overweight">Overweight</option>
+                    <option value="Obese">Obese</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="heart_rate">Heart Rate (bpm):</label>
+                <input type="number" id="heart_rate" name="heart_rate" min="40" max="200" required value="75">
+            </div>
+            
+            <div class="form-group">
+                <label for="daily_steps">Daily Steps:</label>
+                <input type="number" id="daily_steps" name="daily_steps" min="0" required value="8000">
+            </div>
+            
+            <button type="submit">Predict Sleep Disorder</button>
+        </form>
+    </div>
+    
+    <div id="prediction-result" class="prediction-section" style="display: none;">
+        <h3>Prediction Result</h3>
+        <div id="result-content"></div>
+    </div>
+    
+    <div class="visualizations">
+        <div id="plot1">
+            {{ plot1 | safe }}
+        </div>
+        <div id="plot2">
+            {{ plot2 | safe }}
+        </div>
+    </div>
+</div>
+
+<script>
+async function makePrediction(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    const formDataObject = Object.fromEntries(formData.entries());
+    
+    try {
+        const response = await fetch('/predict', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formDataObject)
+        });
+        
+        const result = await response.json();
+        
+        const resultDiv = document.getElementById('prediction-result');
+        const resultContent = document.getElementById('result-content');
+        resultContent.innerHTML = `
+            <p class="prediction-text">${result.prediction}</p>
+            <p class="confidence-text">Confidence: ${result.confidence}%</p>
+        `;
+        resultDiv.style.display = 'block';
+    } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred while making the prediction');
+    }
+}
+</script>
+
+<style>
+.user-input-section {
+    max-width: 600px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #f5f5f5;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+button {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    width: 100%;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+.prediction-section {
+    max-width: 600px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.prediction-text {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.confidence-text {
+    color: #666;
+}
+</style>
+{% endblock %}
