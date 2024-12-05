@@ -19,10 +19,15 @@ logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s %(levelname)s: %(message)s'
 )
+logger = logging.getLogger(__name__)
 
 HDFS_HOST = os.getenv("HDFS_HOST")
 HDFS_PORT = int(os.getenv("HDFS_PORT"))
 HDFS_USER = os.getenv("HDFS_USER")  
+
+logger.info(f"HDFS_HOST: {HDFS_HOST}")
+logger.info(f"HDFS_PORT: {HDFS_PORT}")
+logger.info(f"HDFS_USER: {HDFS_USER}")
 
 main_bp = Blueprint('main', __name__)
 
@@ -85,7 +90,7 @@ def predict():
     try:
         # Get data from request
         data = request.json
-        logging.info(f"Received data: {data}")
+        logger.info(f"Received data: {data}")
         
         # Create feature vector
         features = np.array([[
@@ -136,24 +141,33 @@ def predict():
         })
         
     except Exception as e:
-        logging.error(f"Error in prediction: {str(e)}")
+        logger.error(f"Error in prediction: {str(e)}")
         return jsonify({'error': str(e)}), 400
 
 @main_bp.route('/hdfs_test')
 def hdfs_test():
+    logger.info("Received request at /hdfs_test route.")
     try:
-        # Connect to HDFS using PyArrow
+        # Log connection attempt
+        logger.debug(f"Connecting to HDFS at {HDFS_HOST}:{HDFS_PORT} as user {HDFS_USER}")
+        
+        # Connect to HDFS
         hdfs = fs.HadoopFileSystem(
             host=HDFS_HOST,
             port=HDFS_PORT,
             user=HDFS_USER,
         )
         
-        # List files in the root directory of HDFS
-        file_selector = fs.FileSelector('/', recursive=False)
+        # Log file retrieval
+        logger.debug("Retrieving files from HDFS root directory ('/').")
+        file_selector = fs.FileSelector('/')
         files = hdfs.get_file_info(file_selector)
         file_list = [{"path": file.path, "type": file.type.name} for file in files]
         
+        # Log success
+        logger.info("Successfully retrieved file list from HDFS.")
         return jsonify({"status": "success", "files": file_list})
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        # Log the exception
+        logger.error(f"HDFS connection failed: {str(e)}")
+        return jsonify({"status": "error", "message": f"HDFS connection failed: {str(e)}"}), 500
