@@ -10,7 +10,7 @@ import plotly
 from config import Config
 import plotly.express as px
 from pyarrow import fs
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 import logging
 
 load_dotenv()
@@ -21,13 +21,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-HDFS_HOST = os.getenv("HDFS_HOST")
-HDFS_PORT = int(os.getenv("HDFS_PORT"))
-HDFS_USER = os.getenv("HDFS_USER")  
+# HDFS_HOST = os.getenv("HDFS_HOST")
+# HDFS_PORT = int(os.getenv("HDFS_PORT"))
+# HDFS_USER = os.getenv("HDFS_USER")  
 
-logger.info(f"HDFS_HOST: {HDFS_HOST}")
-logger.info(f"HDFS_PORT: {HDFS_PORT}")
-logger.info(f"HDFS_USER: {HDFS_USER}")
+# logger.info(f"HDFS_HOST: {HDFS_HOST}")
+# logger.info(f"HDFS_PORT: {HDFS_PORT}")
+# logger.info(f"HDFS_USER: {HDFS_USER}")
 
 main_bp = Blueprint('main', __name__)
 
@@ -152,11 +152,7 @@ def hdfs_test():
         logger.debug(f"Connecting to HDFS at {HDFS_HOST}:{HDFS_PORT} as user {HDFS_USER}")
         
         # Connect to HDFS
-        hdfs = fs.HadoopFileSystem(
-            host=HDFS_HOST,
-            port=HDFS_PORT,
-            user=HDFS_USER,
-        )
+        hdfs = fs.HadoopFileSystem(host="default", port=0)
         
         # Log file retrieval
         logger.debug("Retrieving files from HDFS root directory ('/').")
