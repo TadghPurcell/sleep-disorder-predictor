@@ -145,7 +145,6 @@ def hdfs_test():
             host=HDFS_HOST,
             port=HDFS_PORT,
             user=HDFS_USER,
-            kerb_ticket=KERB_TICKET
         )
         
         # List files in the root directory
